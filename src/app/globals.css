@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --petrol: #0e2a33;
+  --accent: #c8102e;
+}
+
+html {
+  font-size: 17px;
+}
+
+body {
+  background: #f1f4f5;
+  color: #17323b;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+}
+
+/* Unica animazione ammessa: la barra di avanzamento che cresce. */
+.progress-fill {
+  transition: width 900ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+table.prona th {
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  color: #5c7c88;
+  padding: 0.7rem 0.95rem;
+  border-bottom: 1px solid #dbe4e7;
+  white-space: nowrap;
+}
+table.prona td {
+  padding: 0.9rem 0.95rem;
+  border-bottom: 1px solid #edf1f2;
+  vertical-align: middle;
+}
+table.prona tbody tr:last-child td {
+  border-bottom: 0;
+}
+table.prona tbody tr:hover {
+  background: #f7fafb;
+}
+
+/* Campi dei moduli: sobri, leggibili da lontano. */
+.field {
+  width: 100%;
+  border: 1px solid #c9d7dc;
+  border-radius: 2px;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  background: #fff;
+  color: #17323b;
+}
+.field:focus {
+  outline: 2px solid #4d7f92;
+  outline-offset: -1px;
+}
+.field:disabled {
+  background: #f3f6f7;
+  color: #7d949c;
+}
+
+/* Liste ed elenchi lunghi: si vedono i primi cinque, il resto si apre a richiesta. */
+.list-collapsed > :nth-child(n + 6) {
+  display: none;
+}
