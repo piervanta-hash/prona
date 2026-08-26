@@ -1,0 +1,254 @@
+// PRONA — schema dimostrativo
+// Nota: modello volutamente piatto e con enum come stringhe, per semplicita' di demo.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Developer {
+  id           String    @id @default(cuid())
+  name         String
+  nipt         String    @unique // codice fiscale d'impresa albanese
+  tier         String // A | B | C
+  licenseState String // ACTIVE | SUSPENDED
+  netWorthEur  Int
+  yearsActive  Int
+  deliveredUnits Int     @default(0)
+  disputesCount  Int     @default(0)
+  city         String
+  contactEmail String
+  projects     Project[]
+  createdAt    DateTime  @default(now())
+}
+
+model Bank {
+  id       String          @id @default(cuid())
+  name     String
+  swift    String
+  accounts EscrowAccount[]
+}
+
+model Certifier {
+  id            String      @id @default(cuid())
+  name          String
+  registryNo    String      @unique // numero albo
+  specialty     String
+  state         String // ACTIVE | SUSPENDED
+  checksDone    Int         @default(0)
+  deviationsFound Int       @default(0)
+  milestones    Milestone[]
+  inspections   Inspection[]
+  createdAt     DateTime    @default(now())
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  publicCode     String?        @unique // assegnato solo alla registrazione
+  name           String
+  municipality   String
+  zone           String?        // zona urbana all'interno del comune (quartiere)
+  address        String
+  developerId    String
+  developer      Developer      @relation(fields: [developerId], references: [id])
+  permitNo       String
+  permitDate     DateTime
+  unitsCount     Int
+  status         String // DRAFT | REGISTERED | SELLING | BUILDING | STALLED | DELIVERED | REJECTED | FROZEN
+  progressPct    Int            @default(0) // % certificata
+  expectedDelivery DateTime
+  originalDelivery DateTime?    // consegna dichiarata all'origine, prima di eventuali proroghe
+  landCadastreRef  String?      // riferimento catastale del terreno (zona/numero)
+  registeredAt   DateTime?
+  rejectionReason String?
+  frozenReason   String?
+  lastSiteActivity DateTime?
+  units          Unit[]
+  escrow         EscrowAccount?
+  milestones     Milestone[]
+  inspections    Inspection[]
+  reports        Report[]
+  attachments    Attachment[]
+  createdAt      DateTime       @default(now())
+}
+
+model Unit {
+  id         String     @id @default(cuid())
+  projectId  String
+  project    Project    @relation(fields: [projectId], references: [id])
+  label      String // es. "A-3-2"
+  floor      Int
+  areaSqm    Int
+  priceEur   Int
+  typology   String // 1+1, 2+1, 3+1, Dyqan
+  status     String // FREE | RESERVED | SOLD | DELIVERED
+  contract   Contract?
+}
+
+model Buyer {
+  id        String     @id @default(cuid())
+  name      String
+  idNumber  String     @unique
+  phone     String
+  email     String
+  city      String
+  contracts Contract[]
+}
+
+model Contract {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  unitId         String    @unique
+  unit           Unit      @relation(fields: [unitId], references: [id])
+  buyerId        String
+  buyer          Buyer     @relation(fields: [buyerId], references: [id])
+  priceEur       Int
+  depositPct     Int
+  planJson       String // piano pagamenti serializzato
+  cadastreRef    String?
+  cadastreDate   DateTime?
+  status         String // PENDING_CADASTRE | REGISTERED | COMPLETED | CANCELLED
+  signedAt       DateTime
+  payments       Payment[]
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id])
+  amountEur  Int
+  paidAt     DateTime
+  method     String // BANK_TRANSFER
+  reference  String
+  reconciled Boolean  @default(false)
+  kind       String // DEPOSIT | INSTALMENT | BALANCE
+}
+
+model EscrowAccount {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  project       Project  @relation(fields: [projectId], references: [id])
+  bankId        String
+  bank          Bank     @relation(fields: [bankId], references: [id])
+  iban          String   @unique
+  active        Boolean  @default(false)
+  frozen        Boolean  @default(false)
+  collectedEur  Int      @default(0)
+  releasedEur   Int      @default(0)
+  retentionPct  Int      @default(5)
+  openedAt      DateTime?
+  releases      ReleaseRequest[]
+}
+
+model Milestone {
+  id            String    @id @default(cuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id])
+  type          String // PERMIT | FOUNDATION | STRUCTURE | ROOF | ENVELOPE | FINISHES | HANDOVER
+  orderIndex    Int
+  cumulativePct Int // % cumulata svincolabile
+  status        String // PENDING | READY | UNDER_REVIEW | CERTIFIED | REJECTED | REVOKED
+  certifierId   String?
+  certifier     Certifier? @relation(fields: [certifierId], references: [id])
+  verifiedAt    DateTime?
+  outcome       String? // PASS | FAIL
+  checklistJson String? // esito checklist di campo
+  photosJson    String? // [{seed,lat,lng,takenAt}]
+  notes         String?
+  release       ReleaseRequest?
+  attachments   Attachment[]
+}
+
+model ReleaseRequest {
+  id           String        @id @default(cuid())
+  code         String        @unique
+  milestoneId  String        @unique
+  milestone    Milestone     @relation(fields: [milestoneId], references: [id])
+  escrowId     String
+  escrow       EscrowAccount @relation(fields: [escrowId], references: [id])
+  amountEur    Int
+  status       String // REQUESTED | AGENCY_APPROVED | EXECUTED | BLOCKED | REJECTED
+  requestedAt  DateTime      @default(now())
+  approvedBy   String?
+  approvedAt   DateTime?
+  executedAt   DateTime?
+  blockReason  String?
+}
+
+model Inspection {
+  id           String     @id @default(cuid())
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id])
+  certifierId  String?
+  certifier    Certifier? @relation(fields: [certifierId], references: [id])
+  type         String // SAMPLE_RECHECK | COMPLIANCE | COMPLAINT
+  outcome      String // PASS | DEVIATION | PENDING
+  notes        String
+  inspector    String
+  performedAt  DateTime
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  authorName String
+  subject    String
+  body       String
+  status     String // OPEN | IN_REVIEW | ANSWERED | CLOSED
+  answer     String?
+  createdAt  DateTime @default(now())
+  answeredAt DateTime?
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorRole String // CITIZEN | DEVELOPER | CERTIFIER | BANK | AGENCY | SYSTEM
+  actorName String
+  action    String
+  entity    String
+  entityRef String
+  detail    String
+  createdAt DateTime @default(now())
+}
+
+model ZonePriceStat {
+  id             String @id @default(cuid())
+  zone           String
+  municipality   String
+  quarter        String // "2024-Q3"
+  avgPricePerSqm Int
+  transactions   Int
+
+  @@unique([zone, quarter])
+}
+
+model DemoState {
+  id    String @id
+  value String
+}
+
+model Attachment {
+  id             String     @id @default(cuid())
+  projectId      String?
+  project        Project?   @relation(fields: [projectId], references: [id])
+  milestoneId    String?
+  milestone      Milestone? @relation(fields: [milestoneId], references: [id])
+  contractId     String?
+  kind           String // PERMIT | SCHEDULE | STRUCTURAL | LAB_TEST | CADASTRE | INSURANCE | OTHER
+  title          String
+  filename       String
+  mime           String
+  sizeKb         Int
+  data           Bytes? // valorizzato solo per i file caricati durante la demo
+  generated      Boolean    @default(false) // documento dimostrativo reso al volo
+  uploadedByRole String
+  uploadedByName String
+  hash           String
+  createdAt      DateTime   @default(now())
+}

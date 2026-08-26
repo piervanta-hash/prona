@@ -1,0 +1,46 @@
+{
+  "name": "prona-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PRONA — Demo istituzionale: tutela dell'acquirente di immobili sulla carta",
+  "scripts": {
+    "demo": "npm install && npm run db:setup && next dev -p 3100",
+    "reset": "prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts",
+    "kiosk": "npm run reset && next dev -p 3100",
+    "db:setup": "prisma generate && prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts",
+    "db:seed": "tsx prisma/seed.ts",
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3100}",
+    "reset:hard": "node scripts/reset.mjs && npm run db:setup"
+  },
+  "dependencies": {
+    "@prisma/client": "6.7.0",
+    "@types/leaflet": "^1.9.22",
+    "leaflet": "^1.9.4",
+    "next": "15.3.2",
+    "qrcode": "^1.5.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19.1.2",
+    "@types/react-dom": "19.1.2",
+    "autoprefixer": "10.4.21",
+    "postcss": "8.5.3",
+    "prisma": "6.7.0",
+    "tailwindcss": "3.4.17",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3"
+  },
+  "allowScripts": {
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "esbuild": true,
+    "prisma": true,
+    "sharp": true
+  }
+}
